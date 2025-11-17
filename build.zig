@@ -64,7 +64,7 @@ fn loadFileFlags(b: *std.Build, triple: []const u8) ![]FileFlags {
 
     std.debug.print(
         "loading {s}/{s}...\n",
-        .{ path.toString(b.allocator), file_name },
+        .{ try path.toString(b.allocator), file_name },
     );
     const file = try path.openFile(file_name, .{});
     // const file = try std.fs.cwd().openFile(file_name, .{});
