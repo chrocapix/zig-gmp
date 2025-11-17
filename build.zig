@@ -25,8 +25,6 @@ pub fn build(b: *std.Build) void {
     mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple })));
     mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple, "mpn" })));
 
-    
-
     const file_flags = loadFileFlags(b, triple) catch |err| {
         std.debug.panic(
             "fatal error: failed to load zon file for target {s}: {t}",
@@ -61,7 +59,13 @@ pub fn build(b: *std.Build) void {
 
 fn loadFileFlags(b: *std.Build, triple: []const u8) ![]FileFlags {
     const file_name = try std.mem.concat(b.allocator, u8, &.{ triple, ".zon" });
-    const path = b.path("upstream"). getPath3(b, null);
+    defer b.allocator.free(file_name);
+    const path = b.path("upstream").getPath3(b, null);
+
+    std.debug.print(
+        "loading {s}/{s}...\n",
+        .{ path.toString(b.allocator), file_name },
+    );
     const file = try path.openFile(file_name, .{});
     // const file = try std.fs.cwd().openFile(file_name, .{});
     defer file.close();
