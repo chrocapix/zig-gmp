@@ -21,6 +21,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .root_source_file = b.path("root.zig"),
     });
     gmp_mod.linkLibrary(gmp_lib);
 
