@@ -1,3 +1,1 @@
-comptime {
-    _ = @cImport(@cInclude("gmp.h"));
-}
+const c = @cImport(@cInclude("gmp.h"));
