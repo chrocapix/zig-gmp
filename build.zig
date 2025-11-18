@@ -7,26 +7,32 @@ pub fn build(b: *std.Build) void {
 
     std.debug.print("zig_gmp: target {s} optimize {t}\n", .{ triple, optimize });
 
+    const gmp_lib = b.addLibrary(.{
+        .name = "gmp",
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        }),
+    });
+    b.installArtifact(gmp_lib);
     const gmp_mod = b.addModule("gmp", .{
         .target = target,
         .optimize = optimize,
         .link_libc = true,
     });
-    const gmp_lib = b.addLibrary(.{
-        .name = "gmp",
-        .linkage = .static,
-        .root_module = gmp_mod,
-    });
-    b.installArtifact(gmp_lib);
+    gmp_mod.linkLibrary(gmp_lib);
+
     gmp_lib.installHeader(
         b.path(b.pathJoin(&.{ "upstream", triple, "gmp.h" })),
         "gmp.h",
     );
 
-    // const mod = gmp_lib.root_module;
-    gmp_mod.addIncludePath(b.path("upstream/gmp-6.3.0"));
-    gmp_mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple })));
-    gmp_mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple, "mpn" })));
+    const mod = gmp_lib.root_module;
+    mod.addIncludePath(b.path("upstream/gmp-6.3.0"));
+    mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple })));
+    mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple, "mpn" })));
 
     const file_flags = loadFileFlags(b, triple) catch |err| {
         std.debug.panic(
@@ -40,25 +46,11 @@ pub fn build(b: *std.Build) void {
         const path = b.path(b.pathJoin(&.{ "upstream", f.file }));
 
         if (std.mem.endsWith(u8, f.file, ".c")) {
-            gmp_mod.addCSourceFile(.{ .file = path, .flags = f.flags });
+            mod.addCSourceFile(.{ .file = path, .flags = f.flags });
         } else if (std.mem.endsWith(u8, f.file, ".s")) {
-            gmp_mod.addAssemblyFile(path);
+            mod.addAssemblyFile(path);
         }
     }
-
-    // TODO: remove toto
-    const toto = b.addExecutable(.{
-        .name = "toto",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .root_source_file = b.path("toto.zig"),
-        }),
-    });
-    toto.linkLibrary(gmp_lib);
-    const run_exe = b.addRunArtifact(toto);
-    const run_step = b.step("toto", "Dummy test program");
-    run_step.dependOn(&run_exe.step);
 }
 
 fn loadFileFlags(b: *std.Build, triple: []const u8) ![]FileFlags {
