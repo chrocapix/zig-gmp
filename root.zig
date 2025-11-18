@@ -1,1 +1,1 @@
-const c = @cImport(@cInclude("gmp.h"));
+pub const c = @cImport(@cInclude("gmp.h"));
