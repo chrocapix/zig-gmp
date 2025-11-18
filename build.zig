@@ -5,6 +5,8 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const triple = target.result.linuxTriple(b.allocator) catch @panic("OOM");
 
+    std.debug.print("zig_gmp: target {s} optimize {t}\n", .{ triple, optimize });
+
     const gmp = b.addLibrary(.{
         .name = "gmp",
         .linkage = .static,
@@ -31,6 +33,7 @@ pub fn build(b: *std.Build) void {
             .{ triple, err },
         );
     };
+    defer b.allocator.free(file_flags);
 
     for (file_flags) |f| {
         const path = b.path(b.pathJoin(&.{ "upstream", f.file }));
@@ -61,13 +64,7 @@ fn loadFileFlags(b: *std.Build, triple: []const u8) ![]FileFlags {
     const file_name = try std.mem.concat(b.allocator, u8, &.{ triple, ".zon" });
     defer b.allocator.free(file_name);
     const path = b.path("upstream").getPath3(b, null);
-
-    std.debug.print(
-        "loading {s}/{s}...\n",
-        .{ try path.toString(b.allocator), file_name },
-    );
     const file = try path.openFile(file_name, .{});
-    // const file = try std.fs.cwd().openFile(file_name, .{});
     defer file.close();
 
     var file_reader = file.reader(&.{});
