@@ -7,25 +7,26 @@ pub fn build(b: *std.Build) void {
 
     std.debug.print("zig_gmp: target {s} optimize {t}\n", .{ triple, optimize });
 
-    const gmp = b.addLibrary(.{
+    const gmp_mod = b.addModule("gmp", .{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    const gmp_lib = b.addLibrary(.{
         .name = "gmp",
         .linkage = .static,
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-        }),
+        .root_module = gmp_mod,
     });
-    b.installArtifact(gmp);
-    gmp.installHeader(
+    b.installArtifact(gmp_lib);
+    gmp_lib.installHeader(
         b.path(b.pathJoin(&.{ "upstream", triple, "gmp.h" })),
         "gmp.h",
     );
 
-    const mod = gmp.root_module;
-    mod.addIncludePath(b.path("upstream/gmp-6.3.0"));
-    mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple })));
-    mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple, "mpn" })));
+    // const mod = gmp_lib.root_module;
+    gmp_mod.addIncludePath(b.path("upstream/gmp-6.3.0"));
+    gmp_mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple })));
+    gmp_mod.addIncludePath(b.path(b.pathJoin(&.{ "upstream", triple, "mpn" })));
 
     const file_flags = loadFileFlags(b, triple) catch |err| {
         std.debug.panic(
@@ -39,9 +40,9 @@ pub fn build(b: *std.Build) void {
         const path = b.path(b.pathJoin(&.{ "upstream", f.file }));
 
         if (std.mem.endsWith(u8, f.file, ".c")) {
-            mod.addCSourceFile(.{ .file = path, .flags = f.flags });
+            gmp_mod.addCSourceFile(.{ .file = path, .flags = f.flags });
         } else if (std.mem.endsWith(u8, f.file, ".s")) {
-            mod.addAssemblyFile(path);
+            gmp_mod.addAssemblyFile(path);
         }
     }
 
@@ -54,7 +55,7 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("toto.zig"),
         }),
     });
-    toto.linkLibrary(gmp);
+    toto.linkLibrary(gmp_lib);
     const run_exe = b.addRunArtifact(toto);
     const run_step = b.step("toto", "Dummy test program");
     run_step.dependOn(&run_exe.step);
