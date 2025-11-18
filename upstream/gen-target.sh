@@ -15,10 +15,13 @@ fi
 target="$1"
 shift
 
+gmp_target=$target
+extra_configure=()
 case $target in
 	aarch64-macos-none) gmp_target=aarch64-apple-darwin25.1.0 ;;
 	x86_64-macos-none) gmp_target=x86_64-apple-darwin25.1.0 ;;
-	*) gmp_target=$target
+	x86_64-windows-gnu)
+		extra_configure+=--disable-assembly ;;
 esac
 
 make_args=()
@@ -49,6 +52,7 @@ if ! [ -e configure-done-stamp ]; then
 	./configure \
 		--prefix=$PWD/build \
 		--enable-shared=no \
+		$extra_configure \
 		--host=$gmp_target \
 		CC="zig-cc.sh -target $target"
 	touch configure-done-stamp
