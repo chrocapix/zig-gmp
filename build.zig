@@ -5,8 +5,6 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const triple = target.result.linuxTriple(b.allocator) catch @panic("OOM");
 
-    // std.debug.print("zig_gmp: target {s} optimize {t}\n", .{ triple, optimize });
-
     const gmp_lib = b.addLibrary(.{
         .name = "gmp",
         .linkage = .static,
@@ -17,13 +15,6 @@ pub fn build(b: *std.Build) void {
         }),
     });
     b.installArtifact(gmp_lib);
-    // const gmp_mod = b.addModule("gmp", .{
-    //     .target = target,
-    //     .optimize = optimize,
-    //     .link_libc = true,
-    //     .root_source_file = b.path("root.zig"),
-    // });
-    // gmp_mod.linkLibrary(gmp_lib);
 
     gmp_lib.installHeader(
         b.path(b.pathJoin(&.{ "upstream", triple, "gmp.h" })),
@@ -37,7 +28,7 @@ pub fn build(b: *std.Build) void {
 
     const file_flags = loadFileFlags(b, triple) catch |err| {
         std.debug.panic(
-            "fatal error: failed to load zon file for target {s}: {t}",
+            "fatal error: zig-gmp: failed to load zon file for target {s}: {t}",
             .{ triple, err },
         );
     };
